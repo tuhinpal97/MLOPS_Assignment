@@ -34,3 +34,4 @@ jobs:
           path: |
             artifacts/
             mlruns/
+            data/processed/heart_clean.csv

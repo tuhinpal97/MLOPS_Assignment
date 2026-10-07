@@ -1,16 +1,32 @@
 # Heart Disease MLOps Assignment - AIML ZG523
 
-End-to-end MLOps implementation for the UCI Cleveland Heart Disease classification problem. The project covers data acquisition and EDA, reusable preprocessing, two tuned classifiers, MLflow experiment tracking, reproducible model packaging, unit tests, GitHub Actions CI, FastAPI serving, Docker, Kubernetes deployment, and Prometheus/Grafana monitoring.
+End-to-end MLOps implementation for the **UCI Cleveland Heart Disease** classification problem. The repository covers data acquisition and EDA, reusable preprocessing, two tuned classifiers, MLflow experiment tracking, reproducible model packaging, automated tests, GitHub Actions CI, FastAPI serving, Docker, Kubernetes deployment, Prometheus/Grafana monitoring, and a simple drift check.
 
-> Educational use only. This model is not a medical device and must not be used for diagnosis or treatment decisions.
+> **Educational use only.** This model is not a medical device and must not be used for diagnosis or treatment decisions.
 
-## 1. Architecture
+## Architecture
 
-![Architecture](artifacts/plots/architecture.png)
+```mermaid
+flowchart LR
+    A[UCI Heart Disease data] --> B[Cleaning and validation]
+    B --> C[EDA]
+    B --> D[Preprocessing Pipeline]
+    D --> E[Logistic Regression]
+    D --> F[Random Forest]
+    E --> G[MLflow]
+    F --> G
+    G --> H[Champion by CV ROC-AUC]
+    H --> I[model.joblib]
+    I --> J[FastAPI]
+    J --> K[Docker]
+    K --> L[Kubernetes]
+    J --> M[Prometheus]
+    M --> N[Grafana]
+```
 
-The implementation deliberately uses technologies covered by the course handout: MLflow for experimentation, Docker for packaging, a model-serving microservice, Kubernetes for deployment, and Prometheus/Grafana for monitoring.
+The stack is deliberately aligned with the course syllabus: MLflow for experimentation, model serialization and containerization, microservice model serving, Kubernetes-style deployment, production monitoring/observability and drift detection.
 
-## 2. Repository structure
+## Repository structure
 
 ```text
 .
@@ -20,13 +36,12 @@ The implementation deliberately uses technologies covered by the course handout:
 │   ├── model/
 │   └── plots/
 ├── data/
-│   ├── raw/processed.cleveland.data
-│   └── processed/heart_clean.csv
+│   └── README.md
 ├── k8s/
 ├── monitoring/
 ├── notebooks/
-├── report/
-├── screenshots/
+├── report/ASSIGNMENT_REPORT.md
+├── screenshots/README.md
 ├── scripts/download_data.py
 ├── src/
 │   ├── api/
@@ -39,10 +54,13 @@ The implementation deliberately uses technologies covered by the course handout:
 ├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt
+├── MODEL_CARD.md
+├── SUBMISSION_CHECKLIST.md
+├── VIDEO_SCRIPT.md
 └── sample_request.json
 ```
 
-## 3. Clean setup
+## Clean setup
 
 Python 3.11 is recommended.
 
@@ -57,50 +75,52 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Prepare the dataset and generate EDA artifacts:
+## Data acquisition and EDA
 
 ```bash
 python scripts/download_data.py
 python -m src.eda
 ```
 
-The download script first uses the official UCI URL and has a public mirror fallback. Missing values represented by `?` are parsed as NaN. The original UCI `num` target (0-4) is converted to a binary label: `0 -> no disease`, `1-4 -> disease present`.
+The download script retrieves the Cleveland data from UCI with a public mirror fallback. `?` values are parsed as missing, and the original `num` outcome is converted to a binary target (`0` = no disease, `1-4` = disease present). The processed CSV is generated deterministically at `data/processed/heart_clean.csv`.
 
-## 4. Model training and MLflow
+EDA generates feature histograms, a correlation heatmap, class balance, missing-value counts and summary statistics.
 
-Start the MLflow UI in one terminal:
+## Training and MLflow
+
+Start MLflow:
 
 ```bash
 mlflow ui --backend-store-uri ./mlruns --port 5000
 ```
 
-Train and log experiments in another terminal:
+Train and track experiments:
 
 ```bash
 python -m src.train --tracking-uri file:./mlruns
 ```
 
-Open `http://127.0.0.1:5000`. The training job performs 5-fold stratified cross-validation, hyperparameter tuning, holdout evaluation, and logs parameters, metrics, plots, and the fitted model for both Logistic Regression and Random Forest.
+The training job uses an 80/20 stratified train/holdout split and 5-fold stratified cross-validation. Preprocessing is contained inside the scikit-learn Pipeline so imputation, encoding and scaling are fitted only on training folds.
 
-### Reference results from the included deterministic split
+### Reference results
 
 | Model | CV Accuracy | CV Precision | CV Recall | CV ROC-AUC | Test Accuracy | Test Precision | Test Recall | Test ROC-AUC |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | Logistic Regression | 0.8470 | 0.8783 | 0.7838 | **0.9065** | 0.8689 | 0.8125 | 0.9286 | 0.9578 |
 | Random Forest | 0.8179 | 0.8083 | 0.8008 | 0.8961 | **0.8852** | 0.8182 | **0.9643** | **0.9589** |
 
-The champion is **Logistic Regression** because the model-selection rule is fixed in advance as mean 5-fold CV ROC-AUC on the training split. This avoids selecting a model by looking at the holdout test set. After selection, the champion pipeline is refit on the full cleaned dataset and saved as `artifacts/model/model.joblib`.
+The champion is **Logistic Regression**, selected by the predeclared rule of highest mean 5-fold CV ROC-AUC. The holdout is not used to choose the winner. After selection, the champion pipeline is refit on all cleaned data and persisted as `artifacts/model/model.joblib`.
 
-## 5. Run tests and lint
+## Tests and lint
 
 ```bash
 ruff check src tests scripts
 pytest -q
 ```
 
-The current project tests data cleaning/target construction, missing-value-safe preprocessing, and the API response contract.
+The tests cover target construction/data cleaning, preprocessing with missing/categorical values, and the FastAPI prediction contract.
 
-## 6. Run the API locally
+## Run the API locally
 
 ```bash
 uvicorn src.api.main:app --host 0.0.0.0 --port 8000
@@ -131,18 +151,18 @@ Example response:
 }
 ```
 
-Prometheus metrics are exposed at `GET /metrics`. API request logs are structured JSON and intentionally do not record raw patient feature values.
+Prometheus metrics are exposed at `GET /metrics`. Request logs are structured JSON and intentionally do not record raw patient feature values.
 
-## 7. Docker and monitoring
+## Docker and monitoring
 
-Build only the API container:
+Build only the API:
 
 ```bash
 docker build -t heart-disease-api:1.0.0 .
 docker run --rm -p 8000:8000 heart-disease-api:1.0.0
 ```
 
-Or start API + Prometheus + Grafana together:
+Or start API + Prometheus + Grafana:
 
 ```bash
 docker compose up --build
@@ -150,64 +170,71 @@ docker compose up --build
 
 - API: `http://localhost:8000`
 - Prometheus: `http://localhost:9090`
-- Grafana: `http://localhost:3000` (default local credentials depend on the Grafana image; change them for any non-local use)
+- Grafana: `http://localhost:3000`
 
-Add Prometheus as a Grafana data source using `http://prometheus:9090`. Useful queries include:
+Useful PromQL:
 
 ```text
-rate(heart_api_requests_total[1m])
+sum(rate(heart_api_requests_total[1m]))
 histogram_quantile(0.95, sum(rate(heart_api_request_latency_seconds_bucket[5m])) by (le))
 heart_predictions_total
 ```
 
-## 8. Kubernetes deployment
+## Kubernetes
 
-Edit the image name in `k8s/deployment.yaml`, then:
+Replace the image placeholder in `k8s/deployment.yaml`, then:
 
 ```bash
 kubectl apply -f k8s/deployment.yaml
 kubectl get pods,svc
 ```
 
-For Minikube, use `minikube tunnel` so the `LoadBalancer` service obtains a reachable address. Read `k8s/README.md` for the complete local sequence.
+For Minikube, run `minikube tunnel` for LoadBalancer access. The manifest includes two replicas, readiness/liveness probes, resource requests/limits and Prometheus scrape annotations.
 
-## 9. CI/CD
+## CI/CD
 
-GitHub Actions runs on pushes and pull requests to `main`:
+GitHub Actions runs on pushes to `main` and pull requests:
 
-1. install the pinned Python environment;
-2. lint with Ruff;
-3. run Pytest and emit JUnit XML;
-4. prepare the UCI dataset and EDA plots;
-5. train/log both models with MLflow;
-6. build the Docker image;
-7. upload model, metrics, plots and MLflow files as workflow artifacts.
+```mermaid
+flowchart LR
+    A[Checkout] --> B[Install dependencies]
+    B --> C[Ruff lint]
+    C --> D[Pytest]
+    D --> E[Data + EDA]
+    E --> F[MLflow training]
+    F --> G[Docker build]
+    G --> H[Upload artifacts]
+```
 
-![CI/CD workflow](artifacts/plots/cicd_workflow.png)
+The workflow fails immediately on code/test/training/container errors and retains model/metrics/plots/MLflow outputs plus the generated cleaned dataset as workflow artifacts.
 
-## 10. Optional drift check
-
-The handout also covers production drift. A simple KS-test-based batch check is included:
+## Optional drift check
 
 ```bash
 python -m src.monitoring.drift_check --current path/to/current_batch.csv
 ```
 
-This is a demonstration alerting signal, not a complete production drift policy.
+The provided KS-test check is a course demonstration signal, not a complete production retraining policy.
 
-## 11. Evidence required before final submission
+## Documentation and submission evidence
 
-The code and report are complete, but screenshots/video and a public repository/deployment URL must be captured from your own environment/account. Follow `screenshots/README.md`. This avoids fabricating execution evidence.
+- Full report: [`report/ASSIGNMENT_REPORT.md`](report/ASSIGNMENT_REPORT.md)
+- Model card: [`MODEL_CARD.md`](MODEL_CARD.md)
+- Final evidence checklist: [`SUBMISSION_CHECKLIST.md`](SUBMISSION_CHECKLIST.md)
+- Required screenshot list: [`screenshots/README.md`](screenshots/README.md)
+- Video walkthrough script: [`VIDEO_SCRIPT.md`](VIDEO_SCRIPT.md)
 
-## 12. Reproducibility notes
+Real screenshots of MLflow, successful GitHub Actions, Docker, Kubernetes, Prometheus/Grafana and the short video must be produced from the student's own execution environment rather than fabricated.
 
-- Raw data is retained and processed data is generated deterministically.
-- Preprocessing is inside the persisted scikit-learn pipeline, preventing training/serving skew.
-- Random state is fixed to 42 where applicable.
+## Reproducibility notes
+
+- Data preparation is deterministic.
+- Preprocessing and prediction are stored in one fitted Pipeline.
+- `random_state=42` is used where applicable.
 - Dependencies are pinned.
-- The champion selection metric is defined before looking at holdout performance.
-- The production artifact is a single fitted preprocessing + estimator pipeline.
+- Model selection is fixed before viewing final holdout performance.
+- GitHub Actions reproduces lint, tests, EDA, training and Docker build from a clean runner.
 
-## 13. Dataset citation
+## Dataset citation
 
 Janosi, A., Steinbrunn, W., Pfisterer, M., & Detrano, R. (1989). *Heart Disease* [Dataset]. UCI Machine Learning Repository. DOI: 10.24432/C52P4X.
