@@ -15,12 +15,9 @@ python scripts/download_data.py
 echo "==> Generating EDA artifacts"
 python -m src.eda
 
-if [[ ! -f artifacts/model/model.joblib ]]; then
-  echo "==> Training model and creating local MLflow runs"
-  python -m src.train --tracking-uri file:./mlruns
-else
-  echo "==> Existing model artifact found; skipping initial training"
-fi
+echo "==> Training models and creating MLflow experiment data"
+rm -rf mlruns
+python -m src.train --tracking-uri file:./mlruns
 
 echo "==> Codespaces setup complete"
-echo "The services will start automatically whenever the Codespace starts."
+echo "FastAPI, MLflow, Prometheus and Grafana will start automatically."
