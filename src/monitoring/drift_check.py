@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 import json
-import numpy as np
+
 import pandas as pd
 from scipy.stats import ks_2samp
 
@@ -29,6 +29,7 @@ def main():
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     Path(args.out).write_text(json.dumps(report, indent=2))
     print(json.dumps(report, indent=2))
+
 
 if __name__ == "__main__":
     main()
