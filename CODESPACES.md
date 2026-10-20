@@ -23,16 +23,37 @@ The Codespace automatically:
 - provisions the assignment dashboard;
 - generates sample prediction traffic so monitoring charts have data.
 
+## Troubleshooting: Codespaces Recovery Mode / Docker-in-Docker feature
+
+If the Codespaces creation log contains an error like:
+
+```text
+NO_PUBKEY 62D54FD4003F6525
+The repository 'https://dl.yarnpkg.com/debian stable InRelease' is not signed.
+Feature "Docker (Docker-in-Docker)" failed to install!
+```
+
+the container build is failing because a Yarn apt repository in the base image has no available signing key. The repository is not needed for this Python assignment. The current Codespaces configuration uses `.devcontainer/Dockerfile` to remove the stale Yarn repository entry before the Docker-in-Docker feature runs.
+
+To apply the fix to an existing Codespace:
+
+1. In the Recovery Mode terminal, run `git pull origin main`.
+2. Press **Ctrl+Shift+P**, select **Codespaces: Rebuild Container**, and confirm.
+3. Wait for the rebuild and setup to finish.
+4. Verify `python --version` reports **Python 3.11.x**.
+
+If `git pull` cannot run in Recovery Mode, open the repository on GitHub and create a **new Codespace on main** after the fix has been committed.
+
 ## Troubleshooting: pip `connection-timeout` / SciPy download
 
-A message such as `files.pythonhosted.org didn't respond within 15 seconds` is a package-download timeout, not a model-training or application-code failure. The Codespaces setup script now configures a 120-second pip timeout and 10 retries.
+A message such as `files.pythonhosted.org didn't respond within 15 seconds` is a package-download timeout, not a model-training or application-code failure. The Codespaces setup script configures a 120-second pip timeout and 10 retries.
 
 If setup stopped during dependency installation:
 
 1. Open the Codespace terminal and run `python --version`.
-2. This repository is configured for **Python 3.11 on Debian Bookworm**. If the error mentions a wheel like `scipy-...-cp312-...-musllinux...`, the current environment is not using that configured image (it is reporting Python 3.12 and a musl Linux wheel).
-3. In the Codespace, press **Ctrl+Shift+P**, choose **Codespaces: Rebuild Container**, and wait for the rebuild and setup to finish. This is especially important if the Codespace was created before the repository's `.devcontainer/devcontainer.json` was added or updated.
-4. If the runtime reports Python 3.11 but PyPI still times out, retry the setup from the terminal:
+2. This repository is configured for **Python 3.11 on Debian Bookworm**. If the error mentions a wheel like `scipy-...-cp312-...-musllinux...`, the current environment is not using the configured image (it is reporting Python 3.12 and a musl Linux wheel).
+3. Rebuild the Codespace container and wait for it to finish.
+4. If the runtime reports Python 3.11 but PyPI still times out, retry setup:
 
    ```bash
    bash .devcontainer/setup.sh
