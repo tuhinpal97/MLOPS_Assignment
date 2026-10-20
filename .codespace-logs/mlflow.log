@@ -1,0 +1,17 @@
+[2026-10-20 16:56:15 +0000] [2572] [INFO] Starting gunicorn 23.0.0
+[2026-10-20 16:56:15 +0000] [2572] [INFO] Listening at: http://0.0.0.0:5000 (2572)
+[2026-10-20 16:56:15 +0000] [2572] [INFO] Using worker: sync
+[2026-10-20 16:56:15 +0000] [2648] [INFO] Booting worker with pid: 2648
+[2026-10-20 16:56:15 +0000] [2649] [INFO] Booting worker with pid: 2649
+[2026-10-20 16:56:15 +0000] [2650] [INFO] Booting worker with pid: 2650
+[2026-10-20 16:56:15 +0000] [2651] [INFO] Booting worker with pid: 2651
+[2026-10-20 16:56:40 +0000] [2572] [INFO] Handling signal: hup
+[2026-10-20 16:56:40 +0000] [2572] [INFO] Hang up: Master
+[2026-10-20 16:56:40 +0000] [2930] [INFO] Booting worker with pid: 2930
+[2026-10-20 16:56:40 +0000] [2931] [INFO] Booting worker with pid: 2931
+[2026-10-20 16:56:40 +0000] [2932] [INFO] Booting worker with pid: 2932
+[2026-10-20 16:56:40 +0000] [2933] [INFO] Booting worker with pid: 2933
+[2026-10-20 16:56:40 +0000] [2572] [ERROR] Worker (pid:2649) was sent SIGHUP!
+[2026-10-20 16:56:40 +0000] [2572] [ERROR] Worker (pid:2650) was sent SIGHUP!
+[2026-10-20 16:56:40 +0000] [2572] [ERROR] Worker (pid:2648) was sent SIGHUP!
+[2026-10-20 16:56:40 +0000] [2572] [ERROR] Worker (pid:2651) was sent SIGHUP!

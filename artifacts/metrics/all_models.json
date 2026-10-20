@@ -11,7 +11,8 @@
     "test_accuracy": 0.8688524590163934,
     "test_precision": 0.8125,
     "test_recall": 0.9285714285714286,
-    "test_roc_auc": 0.9577922077922079
+    "test_roc_auc": 0.9577922077922079,
+    "fit_seconds": 1.1810355186462402
   },
   "random_forest": {
     "best_params": {
@@ -27,6 +28,7 @@
     "test_accuracy": 0.8852459016393442,
     "test_precision": 0.8181818181818182,
     "test_recall": 0.9642857142857143,
-    "test_roc_auc": 0.9588744588744589
+    "test_roc_auc": 0.9588744588744589,
+    "fit_seconds": 14.548574209213257
   }
 }

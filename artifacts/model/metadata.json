@@ -13,7 +13,8 @@
     "test_accuracy": 0.8688524590163934,
     "test_precision": 0.8125,
     "test_recall": 0.9285714285714286,
-    "test_roc_auc": 0.9577922077922079
+    "test_roc_auc": 0.9577922077922079,
+    "fit_seconds": 1.1810355186462402
   },
   "refit_for_production": true,
   "features": [

@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: heart-api
-          image: YOUR_DOCKERHUB_USER/heart-disease-api:1.0.0
+          image: mlops_assignment-api:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
