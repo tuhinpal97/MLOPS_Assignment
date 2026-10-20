@@ -14,7 +14,14 @@ if [[ ! -d mlruns ]]; then
   python -m src.train --tracking-uri file:./mlruns
 fi
 
-if ! pgrep -f "mlflow ui --backend-store-uri" >/dev/null 2>&1; then
+# Reuse an already-running MLflow UI instead of starting a second server on port 5000.
+if curl -fsS --max-time 3 http://127.0.0.1:5000/ >/dev/null 2>&1; then
+  echo "MLflow is already responding on port 5000; reusing the existing server."
+elif ss -ltn 2>/dev/null | awk 'NR > 1 && $4 ~ /:5000$/ { found=1 } END { exit !found }'; then
+  echo "WARNING: Port 5000 is occupied, but MLflow did not respond to HTTP."
+  echo "Inspect the listener with: ss -ltnp | grep ':5000'"
+  echo "If it is a stale MLflow process, stop that PID and rerun this script."
+else
   echo "Starting MLflow on port 5000..."
   nohup mlflow ui \
     --backend-store-uri ./mlruns \
