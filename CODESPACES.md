@@ -11,7 +11,7 @@ This repository is configured so the project can be demonstrated entirely in Git
 The Codespace automatically:
 
 - creates a Python 3.11 environment;
-- installs all dependencies;
+- installs all dependencies, using longer package-download timeouts and retries;
 - downloads/prepares the UCI Cleveland Heart Disease dataset;
 - regenerates EDA artifacts;
 - trains Logistic Regression and Random Forest;
@@ -22,6 +22,23 @@ The Codespace automatically:
 - starts Grafana with Prometheus already configured as the default data source;
 - provisions the assignment dashboard;
 - generates sample prediction traffic so monitoring charts have data.
+
+## Troubleshooting: pip `connection-timeout` / SciPy download
+
+A message such as `files.pythonhosted.org didn't respond within 15 seconds` is a package-download timeout, not a model-training or application-code failure. The Codespaces setup script now configures a 120-second pip timeout and 10 retries.
+
+If setup stopped during dependency installation:
+
+1. Open the Codespace terminal and run `python --version`.
+2. This repository is configured for **Python 3.11 on Debian Bookworm**. If the error mentions a wheel like `scipy-...-cp312-...-musllinux...`, the current environment is not using that configured image (it is reporting Python 3.12 and a musl Linux wheel).
+3. In the Codespace, press **Ctrl+Shift+P**, choose **Codespaces: Rebuild Container**, and wait for the rebuild and setup to finish. This is especially important if the Codespace was created before the repository's `.devcontainer/devcontainer.json` was added or updated.
+4. If the runtime reports Python 3.11 but PyPI still times out, retry the setup from the terminal:
+
+   ```bash
+   bash .devcontainer/setup.sh
+   ```
+
+The setup script verifies the Python version before installing packages, then uses the longer timeout/retry settings. No local installation is needed.
 
 ## Open the services
 
